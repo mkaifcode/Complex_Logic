@@ -243,3 +243,59 @@ public async Task<int> GetLocationTaskGroupCount(int areaId, int locationId, int
          : taskStartDate <= currentDate;
  }
  #endregion Repeat Location Task Helper
+
+
+////// Option 2 for lastweek
+
+// Helper method to process tasks for a single day
+private List<LocationTaskGroup> ProcessMonthlyTaskForDay(LocationTaskGroup group, DateTime currentDate, List<LocationTaskGroup> response)
+{
+    if (!this.IsWithinRange(group.location_task_start_date.Value, group.location_task_repeat_end_date, currentDate))
+    {
+        return response;
+    }
+
+    if (group.location_task_repeat_on_nth_weekday)
+    {
+        // Handle nth weekday logic
+        int currentWeek = this.GetNthWeek(currentDate);
+        int targetWeek = this.GetWeekIndex(group.location_task_repeat_nth_week.ToLower());
+
+        // Check for "last" week condition
+        if (targetWeek == 5)
+        {
+            // Get the last occurrence of the weekday in the current month
+            DateTime lastWeekday = this.GetLastWeekdayOfMonth(currentDate.Year, currentDate.Month, currentDate.DayOfWeek);
+            if (currentDate == lastWeekday &&
+                this.IsDayOfWeekContain(currentDate.DayOfWeek.ToString(), group.location_task_repeat_repeat_days))
+            {
+                response.Add(group);
+            }
+        }
+        else if (currentWeek == targetWeek &&
+                 this.IsDayOfWeekContain(currentDate.DayOfWeek.ToString(), group.location_task_repeat_repeat_days))
+        {
+            response.Add(group);
+        }
+    }
+    else if (currentDate.Day == group.location_task_repeat_day_of_month)
+    {
+        // Handle specific day of the month
+        response.Add(group);
+    }
+
+    return response;
+}
+
+// Check if 
+private DateTime GetLastWeekdayOfMonth(int year, int month, DayOfWeek targetDayOfWeek)
+{
+    DateTime lastDayOfMonth = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+
+    while (lastDayOfMonth.DayOfWeek != targetDayOfWeek)
+    {
+        lastDayOfMonth = lastDayOfMonth.AddDays(-1);
+    }
+
+    return lastDayOfMonth;
+}
