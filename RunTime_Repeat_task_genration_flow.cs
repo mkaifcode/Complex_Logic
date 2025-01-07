@@ -265,9 +265,8 @@ private List<LocationTaskGroup> ProcessMonthlyTaskForDay(LocationTaskGroup group
         if (targetWeek == 5)
         {
             // Get the last occurrence of the weekday in the current month
-            DateTime lastWeekday = this.GetLastWeekdayOfMonth(currentDate.Year, currentDate.Month, currentDate.DayOfWeek);
-            if (currentDate == lastWeekday &&
-                this.IsDayOfWeekContain(currentDate.DayOfWeek.ToString(), group.location_task_repeat_repeat_days))
+            var lastWeekdays = this.GetLastWeekdaysOfMonth(currentDate.Year, currentDate.Month, group.location_task_repeat_repeat_days);
+            if (lastWeekdays.Any(lastWeekday => currentDate.Date == lastWeekday.Date))
             {
                 response.Add(group);
             }
@@ -287,15 +286,30 @@ private List<LocationTaskGroup> ProcessMonthlyTaskForDay(LocationTaskGroup group
     return response;
 }
 
-// Check if 
-private DateTime GetLastWeekdayOfMonth(int year, int month, DayOfWeek targetDayOfWeek)
+// Get the nth week of the month for a given date
+private int GetNthWeek(DateTime date)
 {
+    return (date.Day - 1) / 7 + 1;
+}
+
+// Check if 
+// Check if Finds the last occurrence of a specific weekday in a given month and year.
+private List<DateTime> GetLastWeekdaysOfMonth(int year, int month, string targetDaysOfWeek)
+{
+    List<DateTime> lastWeekdays = new List<DateTime>();
     DateTime lastDayOfMonth = new DateTime(year, month, DateTime.DaysInMonth(year, month));
 
-    while (lastDayOfMonth.DayOfWeek != targetDayOfWeek)
+    foreach (var targetDayOfWeek in targetDaysOfWeek.Split('-'))
     {
-        lastDayOfMonth = lastDayOfMonth.AddDays(-1);
+        DateTime currentDay = lastDayOfMonth;
+
+        while (currentDay.DayOfWeek.ToString() != targetDayOfWeek)
+        {
+            currentDay = currentDay.AddDays(-1);
+        }
+
+        lastWeekdays.Add(currentDay);
     }
 
-    return lastDayOfMonth;
+    return lastWeekdays;
 }
